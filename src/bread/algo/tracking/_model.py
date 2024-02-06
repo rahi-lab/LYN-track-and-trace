@@ -30,6 +30,7 @@ class GNNTracker(nn.Module):
 		conv_hidden_channels: int,
 		conv_num_layers: int,
 		num_classes: int,
+		return_middle_layer: bool = False,
 	):
 		super().__init__()
 
@@ -42,6 +43,9 @@ class GNNTracker(nn.Module):
 		self.conv_num_layers = conv_num_layers
 		self.num_classes = num_classes
 		self.data = None
+		self.return_middle_layers = False
+		self.middle_activations = []  # Add this attribute to store intermediate activations
+
 
 		self.node_encoder = gnn.MLP(
 			in_channels=self.num_node_attr,
@@ -84,17 +88,35 @@ class GNNTracker(nn.Module):
 			norm='batch_norm',
 		)
 
+	# def forward(self, graph: Data):
+	# 	x = self.node_encoder(graph.x)
+	# 	edge_attr = self.edge_encoder(graph.edge_attr)
+	# 	edge_index = graph.edge_index
+
+	# 	x = self.layers[0].conv(x, edge_index, edge_attr)
+
+	# 	for layer in self.layers[1:]:
+	# 		x = layer(x, edge_index, edge_attr)
+
+	# 	out = self.out(x)
+  
+	# 	return out
 	def forward(self, graph: Data):
 		x = self.node_encoder(graph.x)
 		edge_attr = self.edge_encoder(graph.edge_attr)
 		edge_index = graph.edge_index
 
 		x = self.layers[0].conv(x, edge_index, edge_attr)
+		if (self.return_middle_layers):
+			self.middle_activations = [x.clone()]  # Store the initial activation
 
 		for layer in self.layers[1:]:
 			x = layer(x, edge_index, edge_attr)
+			if(self.return_middle_layers):
+   				self.middle_activations.append(x.clone())  # Store intermediate activations
 
 		out = self.out(x)
-  
-		return out
-
+		if self.return_middle_layers:
+			return out, self.middle_activations
+		else:
+			return out
