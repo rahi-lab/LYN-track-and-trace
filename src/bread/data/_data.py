@@ -543,7 +543,19 @@ class Segmentation:
             raise ValueError("Input frame dimension does not match the dimension of the existing frame")
 
         self.data[frame_number] = new_frame
-
+    
+    def birth_times(self, time_id:int, cell_ids: Optional[List[int]] = None) -> np.ndarray:
+        # return the birth time of the cells in cell_ids (first time a cell appeared in the segmentation)
+        # get cell_ids if not provided
+        cell_ids = self.cell_ids(time_id) if cell_ids is None else cell_ids
+        birth_time = np.zeros(len(cell_ids), dtype=int)
+        for i, cell_id in enumerate(cell_ids):
+            for t in range(0,time_id):
+                if cell_id in self.cell_ids(t):
+                    birth_time[i] = t
+                    break
+        return birth_time
+    
 @dataclass
 class SegmentationFile:
     """Store a segmentation File with one or multiple field of view(s) and channel(s).
