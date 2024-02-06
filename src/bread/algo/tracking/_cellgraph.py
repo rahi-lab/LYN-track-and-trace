@@ -11,12 +11,17 @@ __all__ = ['build_cellgraph']
 def build_cellgraph(feat: Features, time_id: int, cell_features, edge_features, return_df: bool = False, seg: Segmentation = None) -> nx.DiGraph:
     # Extract node features
     cell_ids = feat.segmentation.cell_ids(time_id)
+    if(len(cell_ids) == 0):
+        print(f'No cells at time {time_id}')
+        return None
+        # raise ValueError(f'No cells at time {time_id}')  
     is_fourier = False # Default
-    is_features = True
+    is_features = False # Default
+    fourier_list = []
     if cell_features[0] == 'fourier':
         is_fourier = True
         if(len(cell_features)>3):
-            is_featurs = True
+            is_features = True
             feature_list = cell_features[3]
         fourier_features = []
         num_points = cell_features[1] # Convert to int if necessary
@@ -37,9 +42,10 @@ def build_cellgraph(feat: Features, time_id: int, cell_features, edge_features, 
 
     else:
         is_features = True
+        
     if is_features:
         areas, r_equivs, r_mins, r_majs, angles, eccs, x_coordinates, y_coordinates, majs_x, majs_y, mins_x, mins_y = [], [], [], [], [], [], [], [], [], [], [], []
-        mean_intensity, std_intensity, correlations , contrasts, energys, homogeneitys = [], [], [], [], [], []
+        # mean_intensity, std_intensity, correlations , contrasts, energys, homogeneitys = [], [], [], [], [], []
         for cell_id in cell_ids:
             areas.append(feat.cell_area(time_id, cell_id))
             r_equivs.append(feat.cell_r_equiv(time_id, cell_id))
