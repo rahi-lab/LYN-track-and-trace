@@ -22,7 +22,7 @@ def seed_torch(seed=42):
     torch.backends.cudnn.deterministic = True
 
 class AssignmentClassifier(NeuralNetClassifier):
-    def predict_assignment(self, data: Union[AssignmentDataset, Data], assignment_method: str = 'default', return_dict: bool = False) -> Union[List[np.ndarray], np.ndarray]:
+    def predict_assignment(self, data: Union[AssignmentDataset, Data], assignment_method: str = 'default', return_dict: bool = False, return_middle_values: bool = False) -> Union[List[np.ndarray], np.ndarray]:
         if not isinstance(data, Data):
             return [self.predict_assignment(graph) for graph in data ]
 
@@ -30,9 +30,11 @@ class AssignmentClassifier(NeuralNetClassifier):
         cell_ids1 = set([ i for i, a in list(graph.cell_ids) ])
         cell_ids2 = set([ a for i, a in list(graph.cell_ids)])
         n1, n2 = len(cell_ids1), len(cell_ids2)
-        z = self.evaluation_step((graph, None), training=False).cpu().numpy()  # perform raw forward pass
+        # z,middle_layer = self.evaluation_step((graph, None), training=False,)  # pass return_middle_values argument
+        z = self.evaluation_step((graph, None), training=False,)
+        z = z.cpu().numpy() 
         scores = z.reshape((n1, n2))
-        if(assignment_method == 'default'):
+        if(assignment_method == 'default' or assignment_method == 'hungarian'):
             assignment = self.hungarian(scores,n1,n2)
         elif(assignment_method == 'modified_hungarian'):
             assignment = self.modified_hungarian(scores,n1,n2)
@@ -43,7 +45,9 @@ class AssignmentClassifier(NeuralNetClassifier):
         elif(assignment_method == 'modified_hungarian2'):
             assignment = self.modified_hungarian2(scores,n1,n2)
         elif(assignment_method == 'percentage_hungarian'):
-            assignment = self.percentage_hungarian(scores,n1,n2)
+            assignment = self.percentage_hungarian(scores,n1,n2, data = graph)
+        elif(assignment_method == 'custom_optimizer'):
+            assignment = self.custom_optimizer(scores,n1,n2, data = graph)
         else:
             raise ValueError(f'assignment_method {assignment_method} not recognized')
         if return_dict:
@@ -68,7 +72,10 @@ class AssignmentClassifier(NeuralNetClassifier):
             return assignment_dict
             
         else:
-            return assignment
+            if return_middle_values:
+                return assignment, middle_layer
+            else:
+                return assignment
     
     def predict_raw(self, data: Union[AssignmentDataset, Data]) -> Union[List[np.ndarray], np.ndarray]:
         if not isinstance(data, Data):
@@ -82,7 +89,7 @@ class AssignmentClassifier(NeuralNetClassifier):
         scores = z.reshape((n1, n2))
         return scores
 
-    def percentage_hungarian(self, scores: np.ndarray, n1: int ,n2: int) -> np.ndarray:
+    def percentage_hungarian(self, scores: np.ndarray, n1: int ,n2: int , data=None) -> np.ndarray:
         # Create a copy of the scores matrix
         scores_copy = scores.copy()
 
@@ -96,15 +103,17 @@ class AssignmentClassifier(NeuralNetClassifier):
 
         # Calculate the percentage of assignment scores that are higher for each assigned cell
         percentage_higher_scores = []
-        threshold = 20  # Adjust the threshold as needed
+        threshold = 5  # Adjust the threshold as needed
         for i, j in zip(row_ind, col_ind):
             if binary_assignment_matrix[i, j] == 1:
-                count_higher_scores = np.sum(scores_copy[:, j] > scores[i, j])
+                count_higher_scores_j = np.sum(scores_copy[:, j] > scores[i, j])
+                count_higher_scores_i = np.sum(scores_copy[i, :] > scores[i, j])
+                count_higher_scores = (count_higher_scores_j + count_higher_scores_i)/2
                 percentage = (count_higher_scores / (scores.shape[0] - 1)) * 100  # excluding the current cell
                 percentage_higher_scores.append(percentage)
                 if percentage > threshold:
                     binary_assignment_matrix[:, j] = 0  # Set all assignments to this cell to 0
-        print(percentage_higher_scores)
+        # print(percentage_higher_scores)
         print("min_percentage_higher_scores: ", np.min(percentage_higher_scores), "max_percentage_higher_scores: ", np.max(percentage_higher_scores), "average_percentage_higher_scores: ", np.mean(percentage_higher_scores))
         return binary_assignment_matrix
     
@@ -139,6 +148,50 @@ class AssignmentClassifier(NeuralNetClassifier):
         yx = scipy.optimize.linear_sum_assignment(scores, maximize=True)
         assignment = scipy.sparse.bsr_matrix(([1] * len(yx[0]), yx), shape=(n1, n2), dtype=bool).toarray().astype(int)
         return assignment
+    
+    def custom_optimizer(self, scores: np.ndarray, n1: int ,n2: int, data = None) -> np.ndarray:
+        from scipy.optimize import linprog
+
+        similarity_matrix = 1 / (1 + np.exp(-scores))  # apply sigmoid function
+        # Linear programming coefficients for the objective function (negative because linprog does minimization)
+        k = n1
+        if n1 < n2:
+            dummy_objects = np.zeros((n2 - n1, n2))
+            similarity_matrix = np.vstack([similarity_matrix, dummy_objects])
+            k = 2*n1-n2
+
+
+        elif n1 > n2:
+            dummy_objects = np.zeros((n1, n1 - n2))
+            similarity_matrix = np.hstack([similarity_matrix, dummy_objects])
+            k = n1
+
+        
+        c = -similarity_matrix.flatten()
+        
+        n = np.max([n1,n2])
+        
+        # Coefficients for the equality constraint (sum of assignments should be k)
+        A_eq = np.ones((1, n * n))
+        b_eq = np.array([k])
+
+        # Coefficients for the inequality constraints (at most one assignment per row and column)
+        A_ub = np.vstack([np.kron(np.eye(n), np.ones((1, n))),
+                        np.kron(np.ones((1, n)), np.eye(n))])
+        b_ub = np.ones((2 * n,))
+
+        # Bounds for decision variables (binary assignments)
+        bounds = [(0, 1) for _ in range(n * n)]
+
+        # Solve the linear programming problem
+        result = linprog(c, A_eq=A_eq, b_eq=b_eq, A_ub=A_ub, b_ub=b_ub,  bounds=(0, 1), method='highs')
+
+        # Extract the solution (reshape to a matrix)
+        assignment_matrix = np.abs(result.x.reshape((n, n)))
+        assignment_matrix = assignment_matrix[:n1, :n2]
+
+        return assignment_matrix
+
 
 class GraphLoader(DataLoader):
     # we need this class to load the graph data into the training loop, because graphs are dynamically sized and can't be stored as normal numpy arrays
