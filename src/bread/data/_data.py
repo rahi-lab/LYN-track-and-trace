@@ -361,6 +361,7 @@ class Segmentation:
     fov: str = field(init=True)
     preprocess: bool = True
     average_cell_diameter_pixel: float = field(init=False)
+    small_particle_threshold: int = 9
 
     def __post_init__(self):
         if self.data.ndim == 2:
@@ -494,8 +495,11 @@ class Segmentation:
         """Return a cropped version of the segmentation"""
         return Segmentation(self.data[:, y:y+h, x:x+w])
 
-    def remove_small_particles(self, threshold:int = 9):
+    def remove_small_particles(self):
         """Remove small particles from the segmentation"""
+        threshold = self.small_particle_threshold
+        print(f'removing small particles with less than {threshold} pixels that probably have been mis-segmented')
+        
         for i in range(len(self)):
             mask = self.data[i]
             # Calculate the size of each labeled object
@@ -506,7 +510,7 @@ class Segmentation:
 
             # Use the mask to filter out small objects
             filtered_mask = np.where(np.isin(mask, unique_labels[mask_size_filter]), mask, 0)
-            self.data[i] = filtered_mask
+            self.data[i] = filtered_mask    
 
     def calculate_average_cell_diameter_pixels(self):
         # Extract unique cell labels (excluding background label 0)
@@ -566,11 +570,13 @@ class SegmentationFile:
         V: field of view name (e.g. 'FOV0')
         T : number of timeframes
         W, H : shape of the images
+    small_particle_threshold : int, optional
     """
 
     data: List[Segmentation]
     field_of_views: Optional[List[str]] = field(default_factory=list)
     filepath: Optional[str] = None
+    small_particle_threshold: int = 9
 
     def __getitem__(self, fov, *args):
         index = args[0] if args else None
@@ -592,7 +598,7 @@ class SegmentationFile:
             return np.zeros(self.data['FOV0'].shape)
 
     @staticmethod
-    def from_h5(filepath: Path, load_frames: Optional[List[int]] = None) -> 'SegmentationFile':
+    def from_h5(filepath: Path, load_frames: Optional[List[int]] = None, small_particle_threshold: Optional[int] = 9) -> 'SegmentationFile':
         """Read h5 segmentation data from YeaZ"""
         import h5py
         file = h5py.File(filepath, "r")
@@ -612,7 +618,7 @@ class SegmentationFile:
                     for i, key in enumerate(new_keys):
                         if key in keys:
                             imgs[i] = np.array(file[fov][key])
-                    data[fov] = Segmentation(data=imgs, fov=fov)
+                    data[fov] = Segmentation(data=imgs, fov=fov, small_particle_threshold=small_particle_threshold)
                 else:
                     print("this FOV is empty")
                     # imgs = np.zeros((len(keys), *file[fov].shape), dtype=int)
