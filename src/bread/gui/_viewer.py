@@ -62,7 +62,7 @@ class OpenFile(QGroupBox):
 			file_type_dialog = FileTypeDialog(self)
 			file_type = None
 			result = file_type_dialog.exec()
-			if result == file_type_dialog.Accepted:
+			if result == 1:
 				file_type = file_type_dialog.get_file_type()
 				print(f"File type selected: {file_type}")
 			else:
@@ -82,7 +82,7 @@ class OpenFile(QGroupBox):
 			microscopy_list, microscopy_channels = Microscopy.from_nd2(filepath)
 			file_nd2_channel_dialog = FilleChannelMapperDialog(self, channels=microscopy_channels)
 			result = file_nd2_channel_dialog.exec()
-			if result == file_nd2_channel_dialog.Accepted:
+			if result == 1:
 				channel_result = file_nd2_channel_dialog.get_result()
 			else:
 				print("File type dialog canceled")
