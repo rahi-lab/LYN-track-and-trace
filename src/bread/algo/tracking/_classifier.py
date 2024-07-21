@@ -4,6 +4,7 @@ from torch_geometric.loader import DataLoader
 from torch_geometric.data import Data
 import numpy as np, scipy.optimize, scipy.sparse
 from typing import List, Union
+import torch
 
 __all__ = ['AssignmentClassifier', 'GraphLoader','seed_torch']
 
@@ -20,8 +21,19 @@ def seed_torch(seed=42):
     torch.cuda.manual_seed_all(seed) # if you are using multi-GPU.
     torch.backends.cudnn.benchmark = False
     torch.backends.cudnn.deterministic = True
+# Function to print the device being used
+def print_device():
+    if torch.cuda.is_available():
+        print("Running on GPU:", torch.cuda.get_device_name(torch.cuda.current_device()))
+    else:
+        print("Running on CPU")
 
 class AssignmentClassifier(NeuralNetClassifier):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        print_device()
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = device  # Set the device for the model
     def predict_assignment(self, data: Union[AssignmentDataset, Data], assignment_method: str = 'default', return_dict: bool = False, return_middle_values: bool = False) -> Union[List[np.ndarray], np.ndarray]:
         if not isinstance(data, Data):
             return [self.predict_assignment(graph) for graph in data ]
