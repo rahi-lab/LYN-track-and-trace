@@ -13,7 +13,7 @@ if __name__ == '__main__':
     
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--config', dest='config', required=False, default='default', type=str, help='config file')
-    parser.add_argument('--cellgraphs_dir', dest='cellgraph_dir', required=False, default=None, type=str, help='filepaths to the cellgraph directories')
+    parser.add_argument('--cellgraphs_dir', dest='cellgraphs_dir', required=False, default=None, type=str, help='filepaths to the cellgraph directories')
     parser.add_argument('--output_folder', dest='output_folder',required=False, default=None, type=str, help='output directory')
     parser.add_argument('--framediff_min', dest='framediff_min', required=False, default=None, type=int, help='minimum number of frame difference between two trackings')
     parser.add_argument('--framediff_max', dest='framediff_max', required=False, default=None, type=int, help='maximum number of frame difference between two trackings')
@@ -24,8 +24,6 @@ if __name__ == '__main__':
     config = import_module("bread.config." + args.config).configuration.get('ass_graph_config')
     if args.output_folder is not None:
         config['output_folder'] = args.output_folder
-    if args.cellgraph_dir is not None:
-        config['cellgraph_dirs'] = [args.cellgraph_dir]
     if args.framediff_min is not None:
         config['framediff_min'] = args.framediff_min
     if args.framediff_max is not None:
@@ -34,6 +32,11 @@ if __name__ == '__main__':
         config['t1_min'] = args.t1_min
     if args.t1_max is not None:
         config['t1_max'] = args.t1_max
+    if args.cellgraphs_dir is not None: 
+        # set config["cellgraph_dirs"] to a list of every folder in args.cellgraphs_dir
+        config["cellgraph_dirs"] = [os.path.join(args.cellgraphs_dir, folder) for folder in os.listdir(args.cellgraphs_dir) if os.path.isdir(os.path.join(args.cellgraphs_dir, folder))]        
+    print("build assignment graph with args: ", config)
+
     
     print("build assignment graph with args: ", config)
 
