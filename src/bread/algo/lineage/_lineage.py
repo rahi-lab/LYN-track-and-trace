@@ -44,7 +44,7 @@ class LineageGuesser(ABC):
 	----------
 	seg : Segmentation
 	nn_threshold : float, optional
-		Cell masks separated by less than this threshold are considered neighbours. by default 12.0.
+		Cell masks separated by less than this threshold are considered neighbours. by default 8.0.
 	flexible_threshold : bool, optional
 		If no nearest neighbours are found within the given threshold, try to find the closest one, by default False.
 	num_frames_refractory : int, optional
@@ -63,7 +63,7 @@ class LineageGuesser(ABC):
 	"""
 
 	segmentation: Segmentation
-	nn_threshold: float = 12
+	nn_threshold: float = 8
 	flexible_nn_threshold: bool = False
 	num_frames_refractory: int = 0
 	scale_length: float = 1  # [length unit]/px
@@ -354,7 +354,7 @@ class LineageGuesserBudLum(_MajorityVoteMixin, LineageGuesser, _BudneckMixin):
 	segmentation : Segmentation
 	budneck_img : Microscopy
 	nn_threshold : float, optional
-		Cell masks separated by less than this threshold are considered neighbors, by default 12.0.
+		Cell masks separated by less than this threshold are considered neighbors, by default 8.0.
 	flexible_nn_threshold : bool, optional
 		If no nearest neighbours are found within the given threshold, try to find the closest one, by default False.
 	num_frames_refractory : int, optional
@@ -498,8 +498,8 @@ class LineageGuesserNearestCell(LineageGuesser):
 	"""
 	Guess lineage relations by looking at the nearest cell to the bud.
 	"""
-	
-	bud_distance_max: float = 12
+	num_frames: int = 0
+	bud_distance_max: float = 8
 	num_nn_threshold: int = 4
 
 	def __post_init__(self):
@@ -571,7 +571,7 @@ class LineageGuesserNN(LineageGuesser):
 		self.model = LineageNN(layers = layers)
 		current_dir = os.path.dirname(os.path.abspath(__file__))
 		if self.saved_model is None:
-			print("No model was provided")
+			# print("No model was provided")
 			# raise Exception("No model was provided")
 			self.saved_model = os.path.join(current_dir, 'saved_models/best_model_with_fake_candid_thresh12_frame_num8_normalized_False.pth')
 			self.model.load_state_dict(torch.load(self.saved_model))
