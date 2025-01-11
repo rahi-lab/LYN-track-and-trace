@@ -56,3 +56,28 @@ In special cases parent ids in this table might be negative number which means t
 
 To save the lineage tracing results, you can use the save lineage option under file menu on the top menu. This will save the lineage tracing results in a csv file with the same format as the input lineage tracing file.
 
+## notebooks and scripts to re-train models for your own data
+This repository provides the tools necessary to re-train the models for tracking and tracing on custom data. Below are the steps to follow for using the provided script. Ensure that you modify the paths and configurations to suit your environment and data.
+
+### tracking
+
+to re-train the model for tracking, you can use the following script: LYN-track-and-trace/src/scripts/run_train_tracking.sh. 
+
+This script automates the process of:
+1. Setting up directories
+2. Preparing data
+3. Building cell and assignment graphs
+4. Training the model
+
+You will need to open this file in a text editor and update the following variables in the script to match your environment:
+- `PROJECT_DIR`: The root directory of your project.
+- `DATA_PATH`: Path to your input mask files (should be one `.h5` file per movie).
+- Conda environment: Update `conda activate yeazNoTF` with the name of your environment.
+- Paths for input segmentation files, output directories, and configuration files.
+- You can edit or make a new config file to refer to when running the script. It is located in LYN-track-and-trace/src/bread/config/.
+
+### lineage tracing
+to test or re-train the lineage tracing model, you can use the following notebooks: 
+- LYN-track-and-trace/src/scripts/lineage_tracing_test_pipeline.ipynb
+- LYN-track-and-trace/src/scripts/lineage_tracing_train_pipeline.ipynb
+each of them have explanations and instructions on how to use them.
