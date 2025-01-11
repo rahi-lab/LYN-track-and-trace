@@ -37,7 +37,7 @@ dev = ["plotly", "pip-tools", "pytest", "wandb", "munkres", "xgboost", "torch_sc
 Homepage = "https://github.com/rahi-lab/YeaZ-toolbox"
 
 [project.scripts]
-bread = "bread.cli.__main__:main"
+lyn-cli = "bread.cli.__main__:main"
 
 [project.gui-scripts]
-bread = "bread.gui.__main__:main"
+lyn-trace-gui = "bread.gui.__main__:main"
