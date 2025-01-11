@@ -20,7 +20,6 @@ Installation of the package:
 git clone https://github.com/rahi-lab/LYN-track-and-trace
 # alternatively, download and extract the zip of the repository
 cd LYN-track-and-trace
-pip install -r requirements.txt
 pip install -e .
 ```
 

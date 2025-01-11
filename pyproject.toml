@@ -34,7 +34,7 @@ dependencies = [
 dev = ["plotly", "pip-tools", "pytest", "wandb", "munkres", "xgboost", "torch_scatter", "pyg_lib", "torch_sparse", "torch_cluster", "torch_cluster", "torch_geometric==2.2.0", "skorch==0.12.1",]
 
 [project.urls]
-Homepage = "https://github.com/rahi-lab/YeaZ-toolbox"
+Homepage = "https://github.com/rahi-lab/LYN-track-and-trace/"
 
 [project.scripts]
 lyn-cli = "bread.cli.__main__:main"

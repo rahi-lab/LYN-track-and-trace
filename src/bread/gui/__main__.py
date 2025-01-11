@@ -1,8 +1,9 @@
-if __name__ == '__main__':
-	from ._gui import App, APP_STATE
-	from PySide6 import QtWidgets
-	from bread.data import Segmentation, Microscopy, Lineage, SegmentationFile
 
+from ._gui import App, APP_STATE
+from PySide6 import QtWidgets
+from bread.data import Segmentation, Microscopy, Lineage, SegmentationFile
+
+def main():
 	app = QtWidgets.QApplication([])
 
 	window = App()
@@ -22,3 +23,6 @@ if __name__ == '__main__':
 	window.resize(1480, 480)
 
 	app.exec()
+ 
+if __name__ == '__main__':
+    main()
