@@ -14,6 +14,7 @@ import itertools
 import torch.nn as nn
 from torch.nn import functional as F
 import torch
+import joblib
 
 from bread.data import Lineage, Microscopy, Segmentation, Ellipse, Contour, BreadException, BreadWarning, Features
 __all__ = [
@@ -573,7 +574,7 @@ class LineageGuesserNN(LineageGuesser):
 		if self.saved_model is None:
 			# print("No model was provided")
 			# raise Exception("No model was provided")
-			self.saved_model = os.path.join(current_dir, 'saved_models/best_model_with_fake_candid_thresh12_frame_num8_normalized_False.pth')
+			self.saved_model = os.path.join(current_dir, 'saved_models/latest_model12_frame_num8_normalized_True.pth')
 			self.model.load_state_dict(torch.load(self.saved_model))
 		else:
 			self.model.load_state_dict(torch.load(self.saved_model))
@@ -685,6 +686,12 @@ class LineageGuesserNN(LineageGuesser):
 			f, f_list = self._get_features(bud_id, candidate, time_id, selected_times)
 			feature_dict = {k: v for k, v in f.items() if k in selected_keys}
 			features[c_id] = list(feature_dict.values())
+		
+		# apply the normalization
+		scaler = joblib.load(os.path.join(os.path.dirname(os.path.abspath(__file__)),'saved_models/scaler.pkl'))
+
+		# Normalize features
+		features = scaler.transform(features)
 		
 		# Find the id of parent with the highest probability using the ml model
 		predicted_index, confidence = self.predict_parent(bud_id, features.reshape((1, ) + features.shape), number_of_candidates = len(candidate_parents))

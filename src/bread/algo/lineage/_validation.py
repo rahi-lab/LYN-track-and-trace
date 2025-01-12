@@ -42,9 +42,14 @@ def accuracy(lineage_truth: Lineage, lineage_pred: Lineage, strict: bool = True)
 	"""
 	
 	parent_ids_truth, parent_ids_pred, *_ = align_lineages(lineage_truth, lineage_pred)
-	mask_exclude = parent_ids_truth == Lineage.SpecialParentIDs.PARENT_OF_ROOT.value
+	# mask_exclude = parent_ids_truth == Lineage.SpecialParentIDs.PARENT_OF_ROOT.value
+	mask_exclude = parent_ids_truth < 0 # exclude all special cases
+
 	if not strict:
 		mask_exclude |= parent_ids_pred == Lineage.SpecialParentIDs.NO_GUESS.value
 		mask_exclude |= parent_ids_truth == Lineage.SpecialParentIDs.NO_GUESS.value
+		# mask_exclude |= parent_ids_pred == Lineage.SpecialParentIDs.PARENT_OF_EXTERNAL.value
+		# mask_exclude |= parent_ids_truth == Lineage.SpecialParentIDs.PARENT_OF_EXTERNAL.value
+
 	score = np.mean(~(parent_ids_pred[~mask_exclude] - parent_ids_truth[~mask_exclude]).astype(bool))
 	return score
