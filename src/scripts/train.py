@@ -145,9 +145,9 @@ if __name__ == '__main__':
     
     if train_config['min_file_kb'] is not None:
         min_file_kb = train_config['min_file_kb']
-        resultdir = Path(f'{args.result_dir}/_{str(min_file_kb)}KB_/{datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")}')
+        resultdir = Path(f'{args.result_dir}/_{str(min_file_kb)}KB_/{datetime.datetime.now().strftime("%Y-%m-%d_%H_%M_%S")}')
     else:
-        resultdir = Path(f'{args.result_dir}/{datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")}')
+        resultdir = Path(f'{args.result_dir}/{datetime.datetime.now().strftime("%Y-%m-%d_%H_%M_%S")}')
     print("-- result directory --")
     print(resultdir)
     os.makedirs(resultdir, exist_ok=True)
